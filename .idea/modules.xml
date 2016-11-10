@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/Meizhi.iml" filepath="$PROJECT_DIR$/Meizhi.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/headsupcompat/headsupcompat.iml" filepath="$PROJECT_DIR$/headsupcompat/headsupcompat.iml" />
+      <module fileurl="file://$PROJECT_DIR$/smooth-app-bar-layout/smooth-app-bar-layout.iml" filepath="$PROJECT_DIR$/smooth-app-bar-layout/smooth-app-bar-layout.iml" />
+    </modules>
+  </component>
+</project>

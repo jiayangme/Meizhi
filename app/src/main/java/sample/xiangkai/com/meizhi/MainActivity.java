@@ -1,5 +1,6 @@
 package sample.xiangkai.com.meizhi;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
@@ -15,9 +16,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -26,11 +29,13 @@ import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
-import sample.xiangkai.com.meizhi.model.GankMeizhi;
+import sample.xiangkai.com.meizhi.model.Meizhi;
+import sample.xiangkai.com.meizhi.model.MeizhiData;
 import sample.xiangkai.com.meizhi.network.NetWorkFactory;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int PRELOAD_SIZE = 6;
     @Bind(R.id.toolbar)
     Toolbar toolbar;
     @Bind(R.id.rv_content)
@@ -42,8 +47,10 @@ public class MainActivity extends AppCompatActivity {
     @Bind(R.id.coordinator_layout)
     CoordinatorLayout coordinatorLayout;
     private MeizhiListAdapter adapter;
-    private int page = 5;
+    private int page = 0;
     private Subscription subscription;
+    private GridLayoutManager layoutManager;
+    private List<Meizhi> meizhis;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,47 +58,93 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        swipeRefreshLayout.setEnabled(true);
+        swipeRefreshLayout.setRefreshing(true);
         swipeRefreshLayout.setColorSchemeColors(Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW);
-        Snackbar.make(coordinatorLayout,"指引：点击卡片的标题文字，可以打开干货页面：)",Snackbar.LENGTH_INDEFINITE).show();
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                page=0;
+                loadData();
+            }
+        });
+        Snackbar.make(coordinatorLayout, "指引：点击卡片的标题文字，可以打开干货页面：)", Snackbar.LENGTH_INDEFINITE)
+                .setAction("知道了", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                    }
+                }).setActionTextColor(Color.GREEN).show();
         setupRecyclerView();
         loadData();
     }
 
     private void setupRecyclerView() {
-        adapter = new MeizhiListAdapter();
+        meizhis = new ArrayList<>();
+        adapter = new MeizhiListAdapter(meizhis);
 //        rvContent.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
         // TODO: 2016/11/10
-        rvContent.setLayoutManager(new GridLayoutManager(this, 2));
+        layoutManager = new GridLayoutManager(this, 2);
+        rvContent.setLayoutManager(layoutManager);
         rvContent.setAdapter(adapter);
+        rvContent.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+            }
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                int lastPosition = layoutManager.findLastCompletelyVisibleItemPosition();
+                if (lastPosition >= adapter.getItemCount() - PRELOAD_SIZE && !swipeRefreshLayout.isRefreshing()) {
+                    swipeRefreshLayout.setRefreshing(true);
+                    page++;
+                    loadData();
+                }
+            }
+        });
     }
 
     private void loadData() {
         subscription = NetWorkFactory.getGankApi()
                 .getMeizhi(page)
+                .map(ResultParseDateMap.getinstance())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Action1<GankMeizhi>() {
+                .subscribe(new Action1<MeizhiData>() {
                     @Override
-                    public void call(GankMeizhi gankMeizhi) {
-                        adapter.setDatas(gankMeizhi);
-                        swipeRefreshLayout.setEnabled(false);
+                    public void call(MeizhiData meizhiData) {
+                        meizhis.addAll(meizhiData.getResults());
+                        adapter.notifyDataSetChanged();
+                        swipeRefreshLayout.setRefreshing(false);
                     }
                 }, new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
-                        Toast.makeText(MainActivity.this, "数据加载失败", Toast.LENGTH_SHORT).show();
-                        swipeRefreshLayout.setEnabled(false);
+                        Snackbar.make(coordinatorLayout, "加载失败，请重试", Snackbar.LENGTH_LONG)
+                                .setAction("重试", new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        page = 0;
+                                        loadData();
+                                    }
+                                }).setActionTextColor(getResources().getColor(R.color.deep_red)).show();
+                        swipeRefreshLayout.setRefreshing(false);
                     }
                 });
     }
 
     @OnClick(R.id.fab)
     public void onClick() {
+        Intent intent=new Intent(this,GankActivity.class);
+        startActivity(intent);
     }
 
     class MeizhiListAdapter extends RecyclerView.Adapter {
-        private GankMeizhi gankMeizhi;
+        private List<Meizhi> meizhis;
+
+        public MeizhiListAdapter(List<Meizhi> meizhis) {
+            this.meizhis = meizhis;
+        }
 
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -102,18 +155,13 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             ViewHolder viewHolder = (ViewHolder) holder;
-            Glide.with(MainActivity.this).load(gankMeizhi.getResults().get(position).getUrl()).into(viewHolder.ivImage);
-            viewHolder.tvTitle.setText(gankMeizhi.getResults().get(position).getCreatedAt());
+            Glide.with(MainActivity.this).load(meizhis.get(position).getUrl()).into(viewHolder.ivImage);
+            viewHolder.tvTitle.setText(meizhis.get(position).getCreatedAt());
         }
 
         @Override
         public int getItemCount() {
-            return gankMeizhi == null ? 0 : gankMeizhi.getResults().size();
-        }
-
-        public void setDatas(GankMeizhi gankMeizhi) {
-            this.gankMeizhi = gankMeizhi;
-            this.notifyDataSetChanged();
+            return meizhis == null ? 0 : meizhis.size();
         }
 
         class ViewHolder extends RecyclerView.ViewHolder {

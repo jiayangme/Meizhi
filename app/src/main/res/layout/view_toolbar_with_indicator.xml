@@ -11,6 +11,5 @@
         android:id="@+id/tab_layout"
         app:tabMode="scrollable"
         android:layout_width="match_parent"
-        android:layout_height="0.01dp"
-        />
+        android:layout_height="2.5dp"/>
 </LinearLayout>

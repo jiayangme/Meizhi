@@ -4,30 +4,14 @@
               android:layout_height="match_parent"
               android:orientation="vertical">
 
-    <android.support.design.widget.CollapsingToolbarLayout
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_layout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent">
 
-        <FrameLayout
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/rv_gank"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <ImageView
-                android:id="@+id/iv_video"
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:background="@color/theme_primary_darker"/>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_gravity="center"
-                android:src="@mipmap/ic_play"/>
-        </FrameLayout>
-    </android.support.design.widget.CollapsingToolbarLayout>
-
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/rv_gank"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"></android.support.v7.widget.RecyclerView>
+            android:layout_height="wrap_content"/>
+    </android.support.v4.widget.SwipeRefreshLayout>
 </LinearLayout>

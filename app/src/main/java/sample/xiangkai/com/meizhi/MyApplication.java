@@ -8,7 +8,7 @@ import com.squareup.leakcanary.LeakCanary;
  * Created by xiangkai on 2016/11/10.
  */
 
-public class App extends Application{
+public class MyApplication extends Application{
     @Override
     public void onCreate() {
         super.onCreate();

@@ -1,4 +1,4 @@
-package sample.xiangkai.com.meizhi;
+package sample.xiangkai.com.meizhi.activity;
 
 import android.content.Intent;
 import android.graphics.Color;
@@ -7,7 +7,6 @@ import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -19,7 +18,10 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import butterknife.Bind;
@@ -28,14 +30,15 @@ import butterknife.OnClick;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
+import sample.xiangkai.com.meizhi.BaseActivity;
+import sample.xiangkai.com.meizhi.R;
 import sample.xiangkai.com.meizhi.model.Meizhi;
 import sample.xiangkai.com.meizhi.model.MeizhiData;
 import sample.xiangkai.com.meizhi.network.NetWorkFactory;
 
-public class MainActivity extends AppCompatActivity {
-
-    private static final int PRELOAD_SIZE = 6;
+public class MainActivity extends BaseActivity {
     @Bind(R.id.toolbar)
     Toolbar toolbar;
     @Bind(R.id.rv_content)
@@ -46,11 +49,15 @@ public class MainActivity extends AppCompatActivity {
     FloatingActionButton fab;
     @Bind(R.id.coordinator_layout)
     CoordinatorLayout coordinatorLayout;
+    private static final int PRELOAD_SIZE = 6;
+    private static final String DATE = "date";
     private MeizhiListAdapter adapter;
     private int page = 0;
     private Subscription subscription;
     private GridLayoutManager layoutManager;
     private List<Meizhi> meizhis;
+    public static final String URL = "url";
+    public static final String TITLE = "title";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                page=0;
+                page = 0;
                 loadData();
             }
         });
@@ -80,8 +87,6 @@ public class MainActivity extends AppCompatActivity {
     private void setupRecyclerView() {
         meizhis = new ArrayList<>();
         adapter = new MeizhiListAdapter(meizhis);
-//        rvContent.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
-        // TODO: 2016/11/10
         layoutManager = new GridLayoutManager(this, 2);
         rvContent.setLayoutManager(layoutManager);
         rvContent.setAdapter(adapter);
@@ -107,9 +112,26 @@ public class MainActivity extends AppCompatActivity {
     private void loadData() {
         subscription = NetWorkFactory.getGankApi()
                 .getMeizhi(page)
-                .map(ResultParseDateMap.getinstance())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
+                .map(new Func1<MeizhiData, MeizhiData>() {
+                    @Override
+                    public MeizhiData call(MeizhiData meizhiData) {
+                        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SS'Z'");
+                        SimpleDateFormat outputFormat = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
+                        String format;
+                        for (int i = 0; i < meizhiData.getResults().size(); i++) {
+                            try {
+                                Date parse = inputFormat.parse(meizhiData.getResults().get(i).getPublishedAt());
+                                format = outputFormat.format(parse);
+                            } catch (ParseException e) {
+                                format = "";
+                            }
+                            meizhiData.getResults().get(i).setPublishedAt(format);
+                        }
+                        return meizhiData;
+                    }
+                })
                 .subscribe(new Action1<MeizhiData>() {
                     @Override
                     public void call(MeizhiData meizhiData) {
@@ -135,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
 
     @OnClick(R.id.fab)
     public void onClick() {
-        Intent intent=new Intent(this,GankActivity.class);
+        Intent intent = new Intent(this, GankActivity.class);
         startActivity(intent);
     }
 
@@ -155,8 +177,19 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             ViewHolder viewHolder = (ViewHolder) holder;
-            Glide.with(MainActivity.this).load(meizhis.get(position).getUrl()).into(viewHolder.ivImage);
-            viewHolder.tvTitle.setText(meizhis.get(position).getCreatedAt());
+            final String url = meizhis.get(position).getUrl();
+            Glide.with(MainActivity.this).load(url).into(viewHolder.ivImage);
+            final String title = meizhis.get(position).getCreatedAt();
+            viewHolder.tvTitle.setText(title);
+            viewHolder.ivImage.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(MainActivity.this, PictureActivity.class);
+                    intent.putExtra(URL, url);
+                    intent.putExtra(TITLE, title);
+                    startActivity(intent);
+                }
+            });
         }
 
         @Override

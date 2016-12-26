@@ -36,8 +36,8 @@ public class WebActivity extends BaseActivity {
         setContentView(R.layout.activity_web);
         ButterKnife.bind(this);
 
-        tvTitle.setText(getIntent().getStringExtra(GankFragment.TITLE));
         triggleBackButton(toolbar);
+        tvTitle.setText(getIntent().getStringExtra(GankFragment.TITLE));
         webView.loadUrl(getIntent().getStringExtra(GankFragment.URL));
         webView.setWebChromeClient(new WebChromeClient() {
             @Override

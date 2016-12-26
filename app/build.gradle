@@ -23,8 +23,7 @@ dependencies {
     compile rootProject.ext.dependencies["design"]
     compile rootProject.ext.dependencies["appcompat-v7"]
     compile rootProject.ext.dependencies["recyclerview-v7"]
-//    compile rootProject.ext.dependencies["picasso"]
-//    compile rootProject.ext.dependencies["numberprogressbar"]
+    compile rootProject.ext.dependencies["picasso"]
 //    compile rootProject.ext.dependencies["photoview"]
 //    compile rootProject.ext.dependencies["umeng-analytics"]
 //    compile rootProject.ext.dependencies["retrofit"]
@@ -47,4 +46,5 @@ dependencies {
     debugCompile 'com.squareup.leakcanary:leakcanary-android:1.5'
     releaseCompile 'com.squareup.leakcanary:leakcanary-android-no-op:1.5'
     compile 'com.android.support:cardview-v7:24.2.1'
+    compile 'com.daimajia.numberprogressbar:library:1.2@aar'
 }
